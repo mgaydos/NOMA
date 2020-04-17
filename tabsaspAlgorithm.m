@@ -70,8 +70,10 @@ while loop_control
     %our current support set lambda, and leave the users we suspect are not
     %transmitting to be 0.
     w = zeros(K*J, 1);
+    D_active = zeros(N*J, J*length(lambda));
     
-    %Iterate over all members of lambda
+    %Iterate over all members of lambda to create channel realization sub
+    %matrix D_active:
     for i=1:length(lambda)
         
         %Generate appropriate indices of D such that we only evaluate over
@@ -79,12 +81,27 @@ while loop_control
         D_row = 1:N*J;
         D_col = ((lambda(i) - 1)*J + 1):(lambda(i)*J);
     
-        %Generate appropriate indices of w such that we store in correct user
+        %Append estimated support user channel realization information to
+        %end of channel sub matrix
+        D_active_start = (i - 1)*J + 1;
+        D_active_stop = i*J;
+        D_active(:,D_active_start:D_active_stop)  = D(D_row, D_col);
+    end
+    
+    %Calculate least squares estimate:
+    w_active = pinv(D_active) * p;
+    
+    %Assign least square estimates to appropriate users:
+    for i=1:length(lambda)
+        
+        %Generate appropriate indices of w and D such that the 
         w_start = ((lambda(i) - 1)*J + 1);
         w_stop = lambda(i)*J;
-    
-        %Calculate LS estimate
-        w(w_start:w_stop) = pinv(D(D_row, D_col)) * p;
+        w_active_start = (i - 1)*J + 1;
+        w_active_stop = i*J;
+        
+        %Assign values
+        w(w_start:w_stop) = w_active(w_active_start:w_active_stop);
     end
         
     
@@ -114,6 +131,7 @@ while loop_control
     %Save previous estimate of c_estimate and init new estimate to all
     %zeros:
     c_estimate = zeros(K*J, 1);
+    D_active = zeros(N*J, J*length(gamma_hat));
     
     %Iterate over all members of gamma_hat:
     for i=1:length(gamma_hat)
@@ -121,14 +139,29 @@ while loop_control
         %estimated support set gamma_hat in D:
         rows = 1:N*J;
         cols = ((gamma_hat(i) - 1)*J + 1):(gamma_hat(i)*J);
+        
+        %Append channel realization of estimated member of AUS to active
+        %users channel realization D_active:
+        D_active_start = (i - 1)*J + 1;
+        D_active_stop = i*J;
+        D_active(:, D_active_start:D_active_stop) = D(rows, cols); 
+    end
     
+    %Estimate signal:
+    c_est_active = pinv(D_active) * p;
+    
+    %Assign estimated signal to appropriate members:
+    for i=1:length(gamma_hat)
+        
         %Generate appropriate indices of c_estimated such that we store in
         %correct user
         c_start = ((gamma_hat(i) - 1)*J + 1);
         c_stop = gamma_hat(i)*J;
+        c_est_start = (i - 1)*J + 1;
+        c_est_stop = i*J;
     
         %Next, we solve for the estimated transmitted signal:
-        c_estimate(c_start:c_stop) = pinv(D(rows, cols)) * p;
+        c_estimate(c_start:c_stop) = c_est_active(c_est_start:c_est_stop);
     end
         
     
@@ -213,12 +246,21 @@ while loop_control
         %Exit loop
         loop_control = 0;
     end
+    
+    
+    % ===== FORCE EXIT AS SPARSITY > TOTAL USERS ===== %
+    %In very poor environments where the noise is very powerful, we may
+    %detect everything as a valid user. If sparsity exceeds total users,
+    %exit!
+    if s > K
+        loop_control = 0;
+    end
 end
 
 
 % ===== BACK OFF BY ONE LEVEL OF SPARSITY ===== %
-c_hat = c_hat_s_prev;
-AUS_hat = sort(gamma_hat_s_prev)';
+c_hat = c_hat_s;
+AUS_hat = sort(gamma_hat_s)';
 
 
 % ===== FORM X_HAT ===== %

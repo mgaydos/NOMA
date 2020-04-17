@@ -1,4 +1,4 @@
-function [ total_tx_symbols, symbol_errors, AUS_false_positives] = getErrorStatistics(X, X_hat, AUS, AUS_hat)
+function [ total_tx_symbols, symbol_errors, AUS_false_positives, AUS_not_included ] = getErrorStatistics(X, X_hat, AUS, AUS_hat)
 %getErrorStatistics: Generate error statistics for this frame.
 %   This function will determine the number of symbol errors by comparing
 %   the quadrant that the original tx symbol was sent in, and what quadrant
@@ -71,6 +71,8 @@ if length(union(AUS, AUS_hat)) > length(AUS)
     %Extra users in AUS_hat!
     AUS_false_positives = AUS_false_positives + (length(union(AUS, AUS_hat)) - length(AUS));
 end
+
+AUS_not_included = length(AUS) - length(AUS_hat);
 
 
 end

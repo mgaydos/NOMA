@@ -42,7 +42,7 @@ G = H .* spreading_sequences;
 Z_norm = 1/sqrt(2) * (randn(N, J) + 1i*randn(N, J));
 %Scale noise to acheive desired SNR:
 SNR = 10^(SNR_dB/10);
-sigma = 1/sqrt(2 * SNR);
+sigma = 1/sqrt(SNR);
 Z = sigma * Z_norm;
 
 

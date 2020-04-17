@@ -8,8 +8,7 @@ function seqs = generatePseudoRandomComplexNoiseSeqs( K, N )
 %   number. This can be shown to be roughly orthogonal between sequences.
 
 
-seqs = 1/sqrt(2) * (randn(N, K) + 1i*randn(N, K));
+seqs = 1/sqrt(2) * (randi([0, 1], N, K) - 0.5) * 2;
 
 
 end
-
